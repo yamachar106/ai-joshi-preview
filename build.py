@@ -14,6 +14,8 @@ BLOG_DIR = BASE_DIR / "note_articles" / "output"
 MAIL_DIR = BASE_DIR / "newsletter" / "output"
 SITE_DIR = BASE_DIR / "site"
 IMAGE_DIR = BASE_DIR / "image"
+ILLUST_DIR = IMAGE_DIR / "illustrations"
+EYECATCH_DIR = IMAGE_DIR / "eyecatch"
 
 # Simple markdown to HTML converter
 def md_to_html(text):
@@ -176,8 +178,18 @@ def build_blog_page(articles):
         phase = a['meta'].get('phase', '1')
         phase_label = {'1': '認知期', '2': '信頼期', '3': '行動転換期'}.get(phase, '')
 
+        # Check for eyecatch image
+        eyecatch_file = f"eyecatch_{tid.zfill(3)}.png"
+        eyecatch_path = EYECATCH_DIR / eyecatch_file
+        eyecatch_html = ''
+        if eyecatch_path.exists():
+            import shutil
+            shutil.copy2(eyecatch_path, SITE_DIR / eyecatch_file)
+            eyecatch_html = f'<div class="card-eyecatch"><img src="{eyecatch_file}" alt="{html.escape(title)}"></div>'
+
         cards.append(f'''
         <div class="card" data-category="{category}" data-phase="{phase}" onclick="showArticle('{tid}')">
+            {eyecatch_html}
             <div class="card-phase phase-{phase}">{phase_label}</div>
             <div class="card-category">{category}</div>
             <h3 class="card-title">{html.escape(title)}</h3>
@@ -254,12 +266,20 @@ def main():
         meta, body = parse_frontmatter(content)
         thumb, article_text = extract_thumbnail(body)
         tid = meta.get('topic_id', '0')
-        svg = generate_illustration_svg(thumb, tid)
+        # Use real illustration image if available, otherwise fallback to SVG
+        illust_file = f"illustration_{tid.zfill(3)}.png"
+        illust_path = ILLUST_DIR / illust_file
+        if illust_path.exists():
+            import shutil
+            shutil.copy2(illust_path, SITE_DIR / illust_file)
+            illustration = f'<img src="{illust_file}" alt="挿絵" class="article-illustration">'
+        else:
+            illustration = generate_illustration_svg(thumb, tid)
         body_html = md_to_html(article_text)
         articles.append({
             'meta': meta,
             'thumb': thumb,
-            'svg': svg,
+            'svg': illustration,
             'body_html': body_html,
         })
     articles.sort(key=lambda x: int(x['meta'].get('topic_id', 0)))
@@ -519,6 +539,19 @@ body {{
     right: 1rem;
     font-size: 0.75rem;
     color: var(--text-light);
+}}
+
+.card-eyecatch {{
+    margin: -1.2rem -1.2rem 1rem -1.2rem;
+    border-radius: 10px 10px 0 0;
+    overflow: hidden;
+}}
+
+.card-eyecatch img {{
+    width: 100%;
+    height: 160px;
+    object-fit: cover;
+    display: block;
 }}
 
 /* Mail Cards */
