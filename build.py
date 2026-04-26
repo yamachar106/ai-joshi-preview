@@ -266,20 +266,50 @@ def main():
         meta, body = parse_frontmatter(content)
         thumb, article_text = extract_thumbnail(body)
         tid = meta.get('topic_id', '0')
-        # Use real illustration image if available, otherwise fallback to SVG
-        illust_file = f"illustration_{tid.zfill(3)}.png"
-        illust_path = ILLUST_DIR / illust_file
-        if illust_path.exists():
-            import shutil
-            shutil.copy2(illust_path, SITE_DIR / illust_file)
-            illustration = f'<img src="{illust_file}" alt="挿絵" class="article-illustration">'
+        tid_padded = tid.zfill(3)
+        import shutil
+
+        # Illustration A (top)
+        illust_a_file = f"illustration_{tid_padded}_a.png"
+        illust_a_path = ILLUST_DIR / illust_a_file
+        if illust_a_path.exists():
+            shutil.copy2(illust_a_path, SITE_DIR / illust_a_file)
+            illust_a = f'<img src="{illust_a_file}" alt="挿絵A" class="article-illustration">'
         else:
-            illustration = generate_illustration_svg(thumb, tid)
+            # Fallback: single file or SVG
+            illust_single = f"illustration_{tid_padded}.png"
+            if (ILLUST_DIR / illust_single).exists():
+                shutil.copy2(ILLUST_DIR / illust_single, SITE_DIR / illust_single)
+                illust_a = f'<img src="{illust_single}" alt="挿絵" class="article-illustration">'
+            else:
+                illust_a = generate_illustration_svg(thumb, tid)
+
+        # Illustration B (mid)
+        illust_b_file = f"illustration_{tid_padded}_b.png"
+        illust_b_path = ILLUST_DIR / illust_b_file
+        illust_b = ''
+        if illust_b_path.exists():
+            shutil.copy2(illust_b_path, SITE_DIR / illust_b_file)
+            illust_b = f'<img src="{illust_b_file}" alt="挿絵B" class="article-illustration">'
+
+        # Insert illustration B before "視点の転換" section if it exists
         body_html = md_to_html(article_text)
+        if illust_b:
+            # Insert before the 視点の転換 heading
+            insert_marker = '<h2>'
+            headings = [m.start() for m in re.finditer(r'<h2>', body_html)]
+            # Insert before the 3rd or last h2 (視点の転換 section)
+            if len(headings) >= 3:
+                insert_pos = headings[-2]  # Before second-to-last h2
+                body_html = body_html[:insert_pos] + f'<div class="article-illustration-wrap mid">{illust_b}</div>\n' + body_html[insert_pos:]
+            elif len(headings) >= 2:
+                insert_pos = headings[-1]
+                body_html = body_html[:insert_pos] + f'<div class="article-illustration-wrap mid">{illust_b}</div>\n' + body_html[insert_pos:]
+
         articles.append({
             'meta': meta,
             'thumb': thumb,
-            'svg': illustration,
+            'svg': illust_a,
             'body_html': body_html,
         })
     articles.sort(key=lambda x: int(x['meta'].get('topic_id', 0)))
@@ -674,6 +704,12 @@ body {{
 .article-illustration {{
     width: 100%;
     height: auto;
+}}
+
+.article-illustration-wrap.mid {{
+    margin: 2rem -1rem;
+    border-radius: 12px;
+    overflow: hidden;
 }}
 
 .article-body, .mail-body {{
