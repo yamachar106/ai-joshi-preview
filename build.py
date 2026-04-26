@@ -177,7 +177,7 @@ def build_blog_page(articles):
         phase_label = {'1': '認知期', '2': '信頼期', '3': '行動転換期'}.get(phase, '')
 
         cards.append(f'''
-        <div class="card" data-category="{category}" data-phase="{phase}" onclick="showArticle({tid})">
+        <div class="card" data-category="{category}" data-phase="{phase}" onclick="showArticle('{tid}')">
             <div class="card-phase phase-{phase}">{phase_label}</div>
             <div class="card-category">{category}</div>
             <h3 class="card-title">{html.escape(title)}</h3>
@@ -218,7 +218,7 @@ def build_mail_page(mails):
         phase_name = m['meta'].get('phase_name', '')
 
         cards.append(f'''
-        <div class="mail-card" data-phase="{phase}" onclick="showMail({mid})">
+        <div class="mail-card" data-phase="{phase}" onclick="showMail('{mid}')">
             <div class="mail-number">#{mid}</div>
             <div class="mail-phase phase-{phase}">{phase_name}</div>
             <h3 class="mail-subject">{html.escape(subject)}</h3>
